@@ -6,12 +6,13 @@
     <title>Study Bank</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* --- 色彩設計 (初期バージョン準拠) --- */
+        /* --- 色彩設計 (初期バージョン: 白・グレー・緑) --- */
         :root {
-            --bg-color: #F5F7FA;       /* 背景: オフホワイト(グレー寄り) */
-            --text-color: #2C3E50;     /* 文字: ミッドナイトブルー */
-            --accent-color: #6AB187;   /* アクセント: セージグリーン */
-            --card-bg: #FFFFFF;        /* カード背景: 白 */
+            --bg-color: #F5F7FA;
+            --text-color: #2C3E50;     /* 紺：基本文字、勉強 */
+            --accent-color: #6AB187;   /* 緑：ゲーム、プラスのお金 */
+            --danger-color: #e74c3c;   /* 赤：マイナス、停止、警告 */
+            --card-bg: #FFFFFF;
         }
 
         body {
@@ -29,43 +30,36 @@
             width: 100%;
             max-width: 480px;
             text-align: center;
-            padding-bottom: 80px; /* ナビ用余白 */
+            padding-bottom: 80px;
         }
 
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             letter-spacing: 0.1em;
             margin-bottom: 1.5rem;
-            opacity: 0.8;
-            color: var(--text-color);
+            opacity: 0.9;
         }
 
-        /* --- ページ制御 --- */
         .page { display: none; }
         .page.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- カードデザイン --- */
+        /* カード */
         .card {
             background: var(--card-bg);
-            border: 2px solid var(--text-color); /* 初期の枠線ありデザイン */
+            border: 2px solid var(--text-color);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 4px 4px 0px rgba(44, 62, 80, 0.1); /* 初期の影 */
+            box-shadow: 4px 4px 0px rgba(44, 62, 80, 0.1);
+            position: relative;
         }
 
-        .label {
-            font-size: 0.9rem;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
-
+        .label { font-size: 0.9rem; font-weight: bold; display: block; margin-bottom: 5px; color: #555; }
         .big-number { font-size: 2.5rem; font-weight: bold; }
         .unit { font-size: 1rem; margin-left: 5px; }
 
-        /* --- 入力要素 --- */
+        /* 入力フォーム */
         input[type="text"], input[type="number"] {
             width: 100%;
             padding: 12px;
@@ -76,49 +70,57 @@
             margin-bottom: 10px;
             text-align: center;
             outline: none;
-            background: var(--bg-color);
+            background: #FAFAFA;
             color: var(--text-color);
         }
 
         button {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             font-size: 1rem;
             font-weight: bold;
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            margin-bottom: 10px;
-            transition: opacity 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
         }
-        button:active { opacity: 0.8; transform: translateY(2px); }
-        
-        /* ボタン色分け */
-        .btn-study { background-color: var(--text-color); } /* 勉強: 紺 */
-        .btn-game { background-color: var(--accent-color); } /* ゲーム: 緑 */
-        .btn-stop { background-color: #e74c3c; } /* 停止: 赤系(アクセント外だが機能色として) */
+        button:active { transform: translateY(2px); }
+
+        .btn-study { background-color: var(--text-color); }
+        .btn-game { background-color: var(--accent-color); }
+        .btn-stop { background-color: var(--danger-color); }
         
         /* タイマー表示 */
         #timerDisplay {
             font-family: 'Courier New', monospace;
-            font-size: 3rem;
-            margin: 10px 0;
+            font-size: 3.2rem;
+            margin: 15px 0;
             color: var(--text-color);
             font-weight: bold;
         }
-        
-        .sub-text {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 5px;
+
+        /* 履歴リスト */
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
         }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #ddd;
+            font-size: 0.9rem;
+        }
+        .date-small { font-size: 0.75rem; color: #999; margin-right: 8px; }
 
-        /* 区切り線 */
-        hr { border: 0; border-top: 1px dashed #ccc; margin: 20px 0; }
-
-        /* --- ナビゲーションバー --- */
+        /* ナビゲーション */
         .nav-bar {
             position: fixed;
             bottom: 0;
@@ -127,25 +129,27 @@
             background: white;
             display: flex;
             justify-content: space-around;
-            padding: 15px 0;
+            padding: 12px 0;
             border-top: 2px solid var(--text-color);
             z-index: 100;
         }
         .nav-item {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #aaa;
             cursor: pointer;
             flex: 1;
             text-align: center;
             font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .nav-item.active {
-            color: var(--text-color);
-            text-decoration: underline;
-            text-underline-offset: 4px;
-        }
+        .nav-item span { font-size: 1.2rem; margin-bottom: 2px; }
+        .nav-item.active { color: var(--text-color); }
 
-        /* ログイン画面用 */
+        /* 赤字表示用 */
+        .negative { color: var(--danger-color) !important; }
+
         #loginPage { margin-top: 25vh; }
     </style>
 </head>
@@ -153,233 +157,395 @@
 
 <div class="container">
 
+    <!-- 1. ログイン -->
     <div id="loginPage" class="page active">
         <h1>STUDY BANK</h1>
         <div class="card">
             <p class="label">ユーザー名を入力</p>
             <form onsubmit="login(event)">
                 <input type="text" id="usernameInput" placeholder="名前" maxlength="10" required>
-                <button type="submit" class="btn-study">決定</button>
+                <button type="submit" class="btn-study">スタート</button>
             </form>
         </div>
     </div>
 
+    <!-- 2. ホーム（残高・勉強） -->
     <div id="homePage" class="page">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h1 style="margin:0; font-size:1.2rem;">HOME</h1>
-            <small id="currentUserDisplay" onclick="logout()" style="text-decoration:underline; cursor:pointer; color:#666;">Logout</small>
+            <h1 style="margin:0;">HOME</h1>
+            <small onclick="logout()" style="text-decoration:underline; cursor:pointer; color:#999;">Logout</small>
         </div>
 
+        <!-- 遊べる時間残高 -->
         <div class="card">
             <span class="label">遊べる時間 (残高)</span>
             <span class="big-number" id="balanceDisplay">0</span><span class="unit">分</span>
         </div>
 
-        <div class="card" style="border-color: var(--accent-color);">
-            <span class="label" style="color:var(--accent-color);">獲得報酬</span>
-            <span class="big-number" style="color:var(--accent-color);" id="moneyDisplay">0</span><span class="unit">円</span>
+        <!-- お金残高 (簡易表示) -->
+        <div class="card" style="border-color: var(--accent-color); cursor:pointer;" onclick="showPage('walletPage', document.getElementById('navWallet'))">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <span class="label" style="color:var(--accent-color);">現在のお財布</span>
+                    <span class="big-number" style="font-size:1.8rem; color:var(--accent-color);" id="moneyDisplayHome">0</span><span class="unit">円</span>
+                </div>
+                <span style="font-size:1.5rem;">👛 &gt;</span>
+            </div>
         </div>
 
+        <!-- 勉強入力 -->
         <div class="card">
-            <span class="label">✏️ 勉強時間を記録</span>
+            <span class="label">✏️ 勉強を記録</span>
             <input type="number" id="studyInput" placeholder="分" min="1">
-            <button class="btn-study" onclick="addStudy()">＋ 貯金する</button>
+            <button class="btn-study" onclick="addStudy()">＋ 時間とお金を貯める</button>
         </div>
     </div>
 
-    <div id="timerPage" class="page">
-        <h1 style="font-size:1.2rem;">GAME TIME</h1>
+    <!-- 3. ウォレット (帳簿) -->
+    <div id="walletPage" class="page">
+        <h1>WALLET</h1>
         
+        <!-- お金詳細 -->
         <div class="card">
-            <span class="label">⏱️ タイマーで遊ぶ</span>
-            
+            <span class="label">現在のお財布残高</span>
+            <span class="big-number" id="walletBalanceDisplay">0</span><span class="unit">円</span>
+            <div style="font-size:0.8rem; color:#666; margin-top:5px;">
+                総収入: <span id="totalEarnedDisplay">0</span>円
+            </div>
+            <div id="penaltyWarning" style="display:none; color:var(--danger-color); font-size:0.85rem; margin-top:10px; font-weight:bold;">
+                ⚠️ 残高がマイナスです！<br>今日中に勉強して返済しないと<br>明日、ゲーム時間 -60分のペナルティです。
+            </div>
+        </div>
+
+        <!-- 支出入力 -->
+        <div class="card">
+            <span class="label">💸 使ったお金を記録</span>
+            <input type="text" id="expenseItem" placeholder="何に使った？ (例: お菓子)" required>
+            <input type="number" id="expenseCost" placeholder="金額 (円)" min="1">
+            <button class="btn-study" style="background-color:#7f8c8d;" onclick="addExpense()">－ 支出を記録</button>
+        </div>
+
+        <!-- 履歴 -->
+        <div class="card">
+            <span class="label">最近の履歴</span>
+            <ul id="expenseList" class="history-list">
+                <!-- JSで追加 -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- 4. ゲーム (タイマー) -->
+    <div id="timerPage" class="page">
+        <h1>GAME</h1>
+        
+        <!-- タイマー -->
+        <div class="card">
             <div id="timerSetup">
+                <span class="label">⏱️ タイマー設定</span>
                 <input type="number" id="timerInput" placeholder="分" min="1">
                 <button class="btn-game" onclick="startTimer()">▶ スタート</button>
             </div>
 
             <div id="timerActive" style="display:none;">
-                <div id="endTimeDisplay" class="sub-text" style="color:var(--accent-color); font-weight:bold;">終了予定: --:--</div>
+                <span class="label" style="color:var(--accent-color);">PLAYING...</span>
+                <div id="endTimeDisplay" style="font-size:0.9rem; color:#666;"></div>
                 <div id="timerDisplay">00:00</div>
-                <button class="btn-stop" onclick="stopTimer()">■ 終了</button>
-                <div class="sub-text">画面を閉じないでください</div>
+                <button class="btn-stop" onclick="stopTimerManual()">■ 終了して記録</button>
+                <div style="font-size:0.8rem; margin-top:10px; color:#666;">アプリを閉じても計測されます</div>
             </div>
         </div>
 
-        <hr>
-
+        <!-- 手動入力 -->
         <div class="card">
-            <span class="label">📝 タイマーを使わずに記録</span>
-            <div class="sub-text" style="margin-bottom:10px;">すでに遊んだ時間を記録します</div>
+            <span class="label">📝 手動で記録</span>
             <input type="number" id="manualGameInput" placeholder="分" min="1">
-            <button class="btn-game" style="opacity:0.8;" onclick="addGameManual()">記録のみ行う</button>
+            <button class="btn-game" style="opacity:0.7;" onclick="addGameManual()">記録のみ</button>
         </div>
     </div>
 
+    <!-- 5. グラフ -->
     <div id="statsPage" class="page">
-        <h1 style="font-size:1.2rem;">HISTORY</h1>
+        <h1>DATA</h1>
         <div class="card">
             <canvas id="myChart"></canvas>
         </div>
         <div class="card" style="text-align:left; font-size:0.9rem;">
-            <p>累計勉強時間: <b id="totalStudyStat">0</b> 分</p>
-            <p>累計ゲーム時間: <b id="totalGameStat">0</b> 分</p>
+             累計勉強: <b id="totalStudyStat">0</b> 分<br>
+             累計ゲーム: <b id="totalGameStat">0</b> 分
         </div>
     </div>
 
 </div>
 
+<!-- ナビゲーション -->
 <div class="nav-bar" id="navBar" style="display:none;">
-    <div class="nav-item active" onclick="showPage('homePage', this)">記録・残高</div>
-    <div class="nav-item" onclick="showPage('timerPage', this)">ゲーム</div>
-    <div class="nav-item" onclick="showPage('statsPage', this)">グラフ</div>
+    <div class="nav-item active" onclick="showPage('homePage', this)"><span>🏠</span>HOME</div>
+    <div class="nav-item" id="navWallet" onclick="showPage('walletPage', this)"><span>👛</span>帳簿</div>
+    <div class="nav-item" onclick="showPage('timerPage', this)"><span>🎮</span>ゲーム</div>
+    <div class="nav-item" onclick="showPage('statsPage', this)"><span>📊</span>記録</div>
 </div>
 
 <script>
-    // --- データ管理変数 ---
+    // --- グローバル変数 ---
     let currentUser = null;
-    let userData = {};
+    let userData = {
+        logs: [],           // 勉強・ゲーム履歴
+        expenses: [],       // お小遣い帳履歴
+        totalStudy: 0,
+        totalGame: 0,
+        totalSpent: 0,      // 総支出
+        timerEndTime: null, // バックグラウンドタイマー用
+        lastLoginDate: null // ペナルティ判定用
+    };
     let timerInterval = null;
     let chartInstance = null;
 
-    // --- ログイン処理 ---
+    // --- 1. ログイン & 初期化 ---
     function login(event) {
-        if(event) event.preventDefault(); // フォーム送信によるリロードを防ぐ
-        
-        const nameInput = document.getElementById('usernameInput');
-        const name = nameInput.value.trim();
-        
-        if(!name) return; // 空なら何もしない
-        
+        if(event) event.preventDefault();
+        const name = document.getElementById('usernameInput').value.trim();
+        if(!name) return;
+
         currentUser = name;
         loadData();
+        checkPenalty(); // 日付変更とペナルティのチェック
         
         // 画面遷移
         document.getElementById('loginPage').classList.remove('active');
         document.getElementById('homePage').classList.add('active');
         document.getElementById('navBar').style.display = 'flex';
-        document.getElementById('currentUserDisplay').innerText = currentUser;
-
-        // キーボードを閉じるためにフォーカスを外す
-        nameInput.blur();
         
+        // タイマー復帰チェック
+        if(userData.timerEndTime) {
+            restoreTimer();
+        }
+
         if("Notification" in window) Notification.requestPermission();
     }
 
     function logout() {
-        currentUser = null;
         location.reload();
     }
 
-    // --- データ読み書き ---
+    // --- 2. データ管理 ---
     function loadData() {
-        const stored = localStorage.getItem('studyBank_' + currentUser);
+        const stored = localStorage.getItem('studyBank_v3_' + currentUser);
         if (stored) {
             userData = JSON.parse(stored);
+            // データ構造のマイグレーション（古いデータ対策）
+            if(!userData.expenses) userData.expenses = [];
+            if(!userData.totalSpent) userData.totalSpent = 0;
         } else {
-            userData = { logs: [], totalStudy: 0, totalGame: 0 };
+            // 新規ユーザー
+            userData = { logs: [], expenses: [], totalStudy: 0, totalGame: 0, totalSpent: 0, timerEndTime: null, lastLoginDate: new Date().toLocaleDateString('ja-JP') };
         }
         updateUI();
     }
 
     function saveData() {
-        localStorage.setItem('studyBank_' + currentUser, JSON.stringify(userData));
+        userData.lastLoginDate = new Date().toLocaleDateString('ja-JP'); // 保存時に現在日付更新
+        localStorage.setItem('studyBank_v3_' + currentUser, JSON.stringify(userData));
         updateUI();
     }
 
-    // --- 勉強記録 ---
+    // --- 3. ペナルティ機能 (日付変更時の処理) ---
+    function checkPenalty() {
+        const today = new Date().toLocaleDateString('ja-JP');
+        
+        // 最終ログイン日が今日じゃない場合
+        if (userData.lastLoginDate && userData.lastLoginDate !== today) {
+            // 財布残高計算
+            const earned = Math.floor(userData.totalStudy / 60) * 50;
+            const balance = earned - userData.totalSpent;
+
+            // マイナスならペナルティ発動
+            if (balance < 0) {
+                alert(`【警告】\n昨日の収支がマイナス(${balance}円)でした。\nペナルティとしてゲーム可能時間を60分減らします。`);
+                
+                // ログに残す
+                userData.logs.push({
+                    date: today,
+                    type: 'penalty',
+                    minutes: 60
+                });
+                userData.totalGame += 60; // ゲーム時間を増やして残高を減らす
+                saveData();
+            }
+        }
+        // 今日の日付で更新
+        userData.lastLoginDate = today;
+        localStorage.setItem('studyBank_v3_' + currentUser, JSON.stringify(userData));
+    }
+
+    // --- 4. 勉強記録 ---
     function addStudy() {
-        const input = document.getElementById('studyInput');
-        const mins = parseInt(input.value);
+        const mins = parseInt(document.getElementById('studyInput').value);
         if (!mins || mins <= 0) return;
 
-        recordLog('study', mins);
-        input.value = '';
-        alert(`${mins}分 貯金しました！`);
+        const today = new Date().toLocaleDateString('ja-JP');
+        userData.logs.push({ date: today, type: 'study', minutes: mins });
+        userData.totalStudy += mins;
+        
+        document.getElementById('studyInput').value = '';
+        saveData();
+        alert(`${mins}分記録しました。\n${Math.floor(mins/60*50)}円相当貯まりました！`);
     }
 
-    // --- ゲーム記録共通処理 ---
-    function recordLog(type, mins) {
-        const today = new Date().toLocaleDateString('ja-JP');
-        userData.logs.push({ date: today, type: type, minutes: mins });
+    // --- 5. お小遣い帳機能 ---
+    function addExpense() {
+        const item = document.getElementById('expenseItem').value;
+        const cost = parseInt(document.getElementById('expenseCost').value);
         
-        if(type === 'study') userData.totalStudy += mins;
-        if(type === 'game') userData.totalGame += mins;
+        if (!item || !cost || cost <= 0) return alert("項目と金額を入力してください");
+
+        // 日時取得
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ja-JP') + " " + now.getHours() + ":" + String(now.getMinutes()).padStart(2,'0');
+
+        userData.expenses.push({
+            date: dateStr,
+            item: item,
+            cost: cost
+        });
+        userData.totalSpent += cost;
+
+        document.getElementById('expenseItem').value = '';
+        document.getElementById('expenseCost').value = '';
         
         saveData();
+        alert(`「${item}」(${cost}円) を記録しました`);
     }
 
-    // --- ゲーム: 手動入力 ---
-    function addGameManual() {
-        const input = document.getElementById('manualGameInput');
-        const mins = parseInt(input.value);
-        const balance = userData.totalStudy - userData.totalGame;
-
-        if (!mins || mins <= 0) return alert("時間を入力してください");
-        if (mins > balance) return alert(`時間が足りません！\n現在の残高: ${balance}分`);
-
-        recordLog('game', mins);
-        input.value = '';
-        alert(`${mins}分のゲーム時間を記録しました。`);
-    }
-
-    // --- ゲーム: タイマー機能 ---
+    // --- 6. ゲーム機能 (バックグラウンド対応タイマー) ---
     function startTimer() {
-        const input = document.getElementById('timerInput');
-        const mins = parseInt(input.value);
+        const mins = parseInt(document.getElementById('timerInput').value);
         const balance = userData.totalStudy - userData.totalGame;
 
         if (!mins || mins <= 0) return alert("時間をセットしてください");
         if (mins > balance) return alert(`時間が足りません！\n現在の残高: ${balance}分`);
 
-        // 終了予定時刻の計算
-        const now = new Date();
-        const endTime = new Date(now.getTime() + mins * 60000);
-        const endStr = endTime.getHours() + ':' + endTime.getMinutes().toString().padStart(2, '0');
-        document.getElementById('endTimeDisplay').innerText = `終了予定: ${endStr}`;
+        // 終了時刻を計算して保存 (絶対時刻)
+        const now = Date.now();
+        const endTime = now + (mins * 60 * 1000);
+        userData.timerEndTime = endTime;
+        
+        // 記録用の一時データ保存（終了時に確定させるため）
+        userData.currentTimerMins = mins; 
+        
+        saveData();
+        
+        setupTimerUI(endTime);
+    }
 
-        // UI切り替え
+    function setupTimerUI(endTime) {
         document.getElementById('timerSetup').style.display = 'none';
         document.getElementById('timerActive').style.display = 'block';
 
-        let secondsLeft = mins * 60;
-        updateTimerDisplay(secondsLeft);
+        const endObj = new Date(endTime);
+        document.getElementById('endTimeDisplay').innerText = `終了予定: ${endObj.getHours()}:${String(endObj.getMinutes()).padStart(2,'0')}`;
 
-        // カウントダウン開始
+        // インターバル開始
+        if(timerInterval) clearInterval(timerInterval);
+        
         timerInterval = setInterval(() => {
-            secondsLeft--;
-            updateTimerDisplay(secondsLeft);
+            const now = Date.now();
+            const diff = endTime - now;
 
-            if (secondsLeft <= 0) {
-                finishTimer(mins);
+            if (diff <= 0) {
+                // 時間切れ
+                document.getElementById('timerDisplay').innerText = "00:00";
+                finishTimerAuto();
+            } else {
+                // 表示更新
+                const m = Math.floor(diff / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                document.getElementById('timerDisplay').innerText = 
+                    `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
             }
-        }, 1000);
+        }, 500);
     }
 
-    function updateTimerDisplay(seconds) {
-        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-        const s = (seconds % 60).toString().padStart(2, '0');
-        document.getElementById('timerDisplay').innerText = `${m}:${s}`;
+    // アプリを開き直したときの復帰処理
+    function restoreTimer() {
+        const now = Date.now();
+        if (now < userData.timerEndTime) {
+            // まだ継続中ならUIをタイマーモードへ
+            showPage('timerPage', document.querySelectorAll('.nav-item')[2]);
+            setupTimerUI(userData.timerEndTime);
+        } else {
+            // 閉じてる間に終わってた場合
+            userData.timerEndTime = null;
+            saveData();
+            // 記録処理はここで行うか、ユーザーに確認するか。
+            // 今回はシンプルに「終了状態」を表示して、次のアクションを促す形にします。
+            alert("タイマーが終了していました。ゲーム時間を記録します。");
+            // 時間を確定させる（保存していた分数を使う）
+            if(userData.currentTimerMins) {
+                recordGameLog(userData.currentTimerMins);
+                userData.currentTimerMins = null;
+                saveData();
+            }
+        }
     }
 
-    function finishTimer(mins) {
+    function finishTimerAuto() {
         clearInterval(timerInterval);
         playBeep();
-        
         if (Notification.permission === "granted") {
-            new Notification("Study Bank", { body: "終了の時間です！" });
+            new Notification("Study Bank", { body: "時間です！ゲームを終了してください。" });
         }
+        
+        // 自動で記録して終了
+        const mins = userData.currentTimerMins;
+        recordGameLog(mins);
+        
+        userData.timerEndTime = null;
+        userData.currentTimerMins = null;
+        saveData();
 
-        recordLog('game', mins);
-        alert("時間です！ゲームを終了しましょう。");
-        stopTimer();
+        alert("時間です！記録しました。");
+        resetTimerUI();
     }
 
-    function stopTimer() {
+    function stopTimerManual() {
+        // 途中終了した場合
+        const confirmEnd = confirm("タイマーを停止して、予定時間を記録しますか？");
+        if(!confirmEnd) return;
+
         clearInterval(timerInterval);
+        const mins = userData.currentTimerMins;
+        
+        recordGameLog(mins);
+        
+        userData.timerEndTime = null;
+        userData.currentTimerMins = null;
+        saveData();
+        resetTimerUI();
+    }
+
+    function resetTimerUI() {
         document.getElementById('timerSetup').style.display = 'block';
         document.getElementById('timerActive').style.display = 'none';
         document.getElementById('timerInput').value = '';
+    }
+
+    // 手動入力用
+    function addGameManual() {
+        const mins = parseInt(document.getElementById('manualGameInput').value);
+        const balance = userData.totalStudy - userData.totalGame;
+        if (!mins || mins <= 0) return alert("入力してください");
+        if (mins > balance) return alert("残高が足りません");
+        
+        recordGameLog(mins);
+        document.getElementById('manualGameInput').value = '';
+        alert(`${mins}分 記録しました`);
+    }
+
+    function recordGameLog(mins) {
+        const today = new Date().toLocaleDateString('ja-JP');
+        userData.logs.push({ date: today, type: 'game', minutes: mins });
+        userData.totalGame += mins;
+        saveData();
     }
 
     function playBeep() {
@@ -392,18 +558,70 @@
         osc.frequency.value = 880;
         gain.gain.value = 0.1;
         osc.start();
-        setTimeout(() => osc.stop(), 1000);
+        setTimeout(() => osc.stop(), 2000);
     }
 
-    // --- UI更新 & グラフ ---
+    // --- 7. UI更新 ---
     function updateUI() {
-        const balance = userData.totalStudy - userData.totalGame;
-        const money = Math.floor(userData.totalStudy / 60) * 50;
+        // 時間計算
+        const balanceTime = userData.totalStudy - userData.totalGame;
+        document.getElementById('balanceDisplay').innerText = balanceTime;
 
-        document.getElementById('balanceDisplay').innerText = balance;
-        document.getElementById('moneyDisplay').innerText = money.toLocaleString();
+        // お金計算
+        const totalEarned = Math.floor(userData.totalStudy / 60) * 50;
+        const currentMoney = totalEarned - userData.totalSpent;
+
+        // 表示
+        const moneyDisplay = document.getElementById('moneyDisplayHome');
+        const walletDisplay = document.getElementById('walletBalanceDisplay');
+        
+        moneyDisplay.innerText = currentMoney.toLocaleString();
+        walletDisplay.innerText = currentMoney.toLocaleString();
+        document.getElementById('totalEarnedDisplay').innerText = totalEarned.toLocaleString();
+
+        // マイナス警告
+        const warning = document.getElementById('penaltyWarning');
+        if(currentMoney < 0) {
+            moneyDisplay.classList.add('negative');
+            walletDisplay.classList.add('negative');
+            warning.style.display = 'block';
+        } else {
+            moneyDisplay.classList.remove('negative');
+            walletDisplay.classList.remove('negative');
+            warning.style.display = 'none';
+        }
+
+        // 統計
         document.getElementById('totalStudyStat').innerText = userData.totalStudy;
         document.getElementById('totalGameStat').innerText = userData.totalGame;
+
+        // 支出リスト更新 (最新5件)
+        const list = document.getElementById('expenseList');
+        list.innerHTML = "";
+        const recentExpenses = userData.expenses.slice().reverse().slice(0, 5); // コピーして逆順
+        
+        recentExpenses.forEach(ex => {
+            const li = document.createElement('li');
+            li.className = 'history-item';
+            li.innerHTML = `
+                <div><span class="date-small">${ex.date}</span> ${ex.item}</div>
+                <div style="font-weight:bold;">- ${ex.cost}円</div>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    // --- 8. ページ切り替え & グラフ ---
+    function showPage(pageId, navItem) {
+        document.querySelectorAll('.page').forEach(el => {
+            if (el.id !== 'loginPage') el.classList.remove('active');
+        });
+        document.getElementById(pageId).classList.add('active');
+
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if(navItem) navItem.classList.add('active');
+
+        if (pageId === 'statsPage') renderChart();
     }
 
     function renderChart() {
@@ -433,7 +651,7 @@
                 labels: last7Days.map(d => d.slice(5)),
                 datasets: [
                     { label: '勉強', data: studyData, backgroundColor: '#2C3E50' },
-                    { label: 'ゲーム', data: gameData, backgroundColor: '#6AB187' }
+                    { label: 'ゲーム/罰', data: gameData, backgroundColor: '#6AB187' }
                 ]
             },
             options: {
@@ -441,19 +659,6 @@
                 scales: { y: { beginAtZero: true } }
             }
         });
-    }
-
-    // --- ページ切り替え ---
-    function showPage(pageId, navItem) {
-        document.querySelectorAll('.page').forEach(el => {
-            if (el.id !== 'loginPage') el.classList.remove('active');
-        });
-        document.getElementById(pageId).classList.add('active');
-
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        if(navItem) navItem.classList.add('active');
-
-        if (pageId === 'statsPage') renderChart();
     }
 </script>
 
