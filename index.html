@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Bank</title>
+    <style>
+        /* 色彩設計 (3色ルール) */
+        :root {
+            --bg-color: #F5F7FA;       /* 1. オフホワイト (背景) */
+            --text-color: #2C3E50;     /* 2. ミッドナイトブルー (文字・主要素) */
+            --accent-color: #6AB187;   /* 3. セージグリーン (強調・ボタン) */
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+        }
+
+        /* カードデザイン */
+        .card {
+            background: white;
+            border: 2px solid var(--text-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 4px 4px 0px var(--text-color); /* フラットな影 */
+        }
+
+        .label {
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .big-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+
+        .unit {
+            font-size: 1rem;
+            margin-left: 5px;
+        }
+
+        /* 2カラムレイアウト */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* 入力エリア */
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 2px solid var(--text-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            background-color: var(--text-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:active {
+            opacity: 0.8;
+            transform: translateY(2px);
+        }
+
+        button.study-btn {
+            background-color: var(--text-color); /* 勉強は落ち着いた青 */
+        }
+
+        button.game-btn {
+            background-color: var(--accent-color); /* ゲーム・報酬は緑 */
+        }
+
+        /* アラートなどのメッセージ */
+        .message {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            height: 1.2em;
+            color: var(--text-color);
+        }
+
+        /* 履歴・詳細エリア */
+        .stats {
+            margin-top: 30px;
+            text-align: left;
+            font-size: 0.85rem;
+            border-top: 1px solid #ccc;
+            padding-top: 15px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>STUDY BANK</h1>
+
+    <div class="card">
+        <span class="label">遊べる時間 (残高)</span>
+        <span id="balanceDisplay" class="big-number">0</span><span class="unit">分</span>
+    </div>
+
+    <div class="card" style="border-color: var(--accent-color); color: var(--accent-color);">
+        <span class="label" style="color:var(--text-color)">獲得報酬</span>
+        <span id="moneyDisplay" class="big-number">0</span><span class="unit">円</span>
+    </div>
+
+    <div class="grid">
+        <div>
+            <input type="number" id="studyInput" placeholder="勉強(分)" min="1">
+            <button class="study-btn" onclick="addStudy()">＋ 勉強</button>
+        </div>
+        <div>
+            <input type="number" id="gameInput" placeholder="ゲーム(分)" min="1">
+            <button class="game-btn" onclick="addGame()">－ ゲーム</button>
+        </div>
+    </div>
+
+    <div class="message" id="messageArea"></div>
+
+    <div class="stats">
+        <div class="stat-row">
+            <span>総勉強時間</span>
+            <span id="totalStudyDisplay">0 分</span>
+        </div>
+        <div class="stat-row">
+            <span>総ゲーム時間</span>
+            <span id="totalGameDisplay">0 分</span>
+        </div>
+        <div style="margin-top:10px; text-align:right;">
+            <small onclick="resetData()" style="cursor:pointer; text-decoration:underline; color:#999;">データをリセット</small>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 初期データのロード
+    let totalStudy = parseInt(localStorage.getItem('totalStudy')) || 0;
+    let totalGame = parseInt(localStorage.getItem('totalGame')) || 0;
+
+    updateUI();
+
+    // UI更新関数
+    function updateUI() {
+        // 計算ロジック
+        const balance = totalStudy - totalGame;
+        const money = Math.floor(totalStudy / 60) * 50;
+
+        // 表示更新
+        document.getElementById('balanceDisplay').innerText = balance;
+        document.getElementById('moneyDisplay').innerText = money.toLocaleString();
+        
+        document.getElementById('totalStudyDisplay').innerText = totalStudy + " 分";
+        document.getElementById('totalGameDisplay').innerText = totalGame + " 分";
+
+        // 保存
+        localStorage.setItem('totalStudy', totalStudy);
+        localStorage.setItem('totalGame', totalGame);
+    }
+
+    // 勉強時間の追加
+    function addStudy() {
+        const input = document.getElementById('studyInput');
+        const minutes = parseInt(input.value);
+
+        if (!minutes || minutes <= 0) {
+            showMessage("時間を入力してください");
+            return;
+        }
+
+        totalStudy += minutes;
+        input.value = ""; // 入力欄クリア
+        showMessage(`素晴らしい！ ${minutes}分貯金しました。`);
+        updateUI();
+    }
+
+    // ゲーム時間の記録（引き出し）
+    function addGame() {
+        const input = document.getElementById('gameInput');
+        const minutes = parseInt(input.value);
+        const balance = totalStudy - totalGame;
+
+        if (!minutes || minutes <= 0) {
+            showMessage("時間を入力してください");
+            return;
+        }
+
+        // 仕様: ゲームした時間 <= 勉強した時間 (残高不足チェック)
+        if (minutes > balance) {
+            showMessage("⚠️ 勉強時間が足りません！");
+            alert("勉強時間が足りません！先に勉強して時間を貯めましょう。");
+            return;
+        }
+
+        totalGame += minutes;
+        input.value = ""; // 入力欄クリア
+        showMessage(`${minutes}分遊びました。リフレッシュ！`);
+        updateUI();
+    }
+
+    // メッセージ表示用
+    function showMessage(text) {
+        const area = document.getElementById('messageArea');
+        area.innerText = text;
+        setTimeout(() => { area.innerText = ""; }, 3000);
+    }
+
+    // データリセット（デバッグ・運用用）
+    function resetData() {
+        if(confirm("全ての記録を削除してリセットしますか？")) {
+            totalStudy = 0;
+            totalGame = 0;
+            updateUI();
+            showMessage("データをリセットしました");
+        }
+    }
+</script>
+
+</body>
+</html>
