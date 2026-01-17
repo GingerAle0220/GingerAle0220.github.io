@@ -108,17 +108,44 @@
             padding: 0;
             margin: 0;
             text-align: left;
-            max-height: 200px;
-            overflow-y: auto;
+            min-height: 200px; /* 高さを確保してページ切り替え時のガタツキを軽減 */
         }
         .history-item {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
+            padding: 10px 0;
             border-bottom: 1px dashed #ddd;
             font-size: 0.9rem;
+            animation: fadeIn 0.2s ease;
         }
         .date-small { font-size: 0.75rem; color: #999; margin-right: 8px; }
+
+        /* ページネーション */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 2px solid #eee;
+        }
+        .page-btn {
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--text-color);
+            padding: 5px 15px;
+            width: auto;
+            font-size: 0.9rem;
+            border-radius: 20px;
+            box-shadow: none;
+            margin: 0;
+        }
+        .page-btn:disabled {
+            border-color: #ddd;
+            color: #ddd;
+            cursor: default;
+            transform: none;
+        }
 
         /* ナビゲーション */
         .nav-bar {
@@ -227,10 +254,17 @@
 
         <!-- 履歴 -->
         <div class="card">
-            <span class="label">最近の履歴</span>
+            <span class="label">履歴 (最大100件)</span>
             <ul id="expenseList" class="history-list">
                 <!-- JSで追加 -->
             </ul>
+            
+            <!-- ページネーション -->
+            <div class="pagination" id="walletPagination">
+                <button class="page-btn" onclick="changeWalletPage(-1)" id="prevPageBtn">＜ 前へ</button>
+                <span id="pageIndicator" style="font-size:0.9rem; font-weight:bold;">1 / 1</span>
+                <button class="page-btn" onclick="changeWalletPage(1)" id="nextPageBtn">次へ ＞</button>
+            </div>
         </div>
     </div>
 
@@ -299,6 +333,11 @@
     };
     let timerInterval = null;
     let chartInstance = null;
+    
+    // 帳簿ページネーション用
+    let currentWalletPage = 1;
+    const ITEMS_PER_PAGE = 5;
+    const MAX_EXPENSES = 100;
 
     // --- 1. ログイン & 初期化 ---
     function login(event) {
@@ -354,7 +393,7 @@
         
         // 最終ログイン日が今日じゃない場合
         if (userData.lastLoginDate && userData.lastLoginDate !== today) {
-            // 財布残高計算 (★変更点: 1分1.5円)
+            // 財布残高計算 (1分1.5円)
             const earned = Math.floor(userData.totalStudy * 1.5);
             const balance = earned - userData.totalSpent;
 
@@ -388,7 +427,7 @@
         
         document.getElementById('studyInput').value = '';
         saveData();
-        // ★変更点: メッセージも1分1.5円表記へ
+        // 1分1.5円
         alert(`${mins}分記録しました。\n${Math.floor(mins * 1.5)}円相当貯まりました！`);
     }
 
@@ -408,13 +447,28 @@
             item: item,
             cost: cost
         });
+        
+        // ★ 最大件数制限（古いものを削除）
+        if (userData.expenses.length > MAX_EXPENSES) {
+            userData.expenses.shift(); // 配列の先頭（一番古い要素）を削除
+        }
+
         userData.totalSpent += cost;
 
         document.getElementById('expenseItem').value = '';
         document.getElementById('expenseCost').value = '';
         
+        // 記録したら1ページ目に戻す
+        currentWalletPage = 1;
+        
         saveData();
         alert(`「${item}」(${cost}円) を記録しました`);
+    }
+
+    // ★ 帳簿ページ切り替え
+    function changeWalletPage(direction) {
+        currentWalletPage += direction;
+        updateUI(); // 表示を更新
     }
 
     // --- 6. ゲーム機能 (バックグラウンド対応タイマー) ---
@@ -568,7 +622,7 @@
         const balanceTime = userData.totalStudy - userData.totalGame;
         document.getElementById('balanceDisplay').innerText = balanceTime;
 
-        // お金計算 (★変更点: 1分1.5円)
+        // お金計算 (1分1.5円)
         const totalEarned = Math.floor(userData.totalStudy * 1.5);
         const currentMoney = totalEarned - userData.totalSpent;
 
@@ -596,20 +650,44 @@
         document.getElementById('totalStudyStat').innerText = userData.totalStudy;
         document.getElementById('totalGameStat').innerText = userData.totalGame;
 
-        // 支出リスト更新 (最新5件)
+        // ★ 帳簿リスト更新 (ページネーション対応)
         const list = document.getElementById('expenseList');
         list.innerHTML = "";
-        const recentExpenses = userData.expenses.slice().reverse().slice(0, 5); // コピーして逆順
         
-        recentExpenses.forEach(ex => {
-            const li = document.createElement('li');
-            li.className = 'history-item';
-            li.innerHTML = `
-                <div><span class="date-small">${ex.date}</span> ${ex.item}</div>
-                <div style="font-weight:bold;">- ${ex.cost}円</div>
-            `;
-            list.appendChild(li);
-        });
+        // 全履歴を逆順（新しい順）にコピー
+        const allExpenses = userData.expenses.slice().reverse();
+        
+        // 総ページ数計算
+        const totalPages = Math.ceil(allExpenses.length / ITEMS_PER_PAGE) || 1;
+        
+        // ページ範囲チェック
+        if (currentWalletPage < 1) currentWalletPage = 1;
+        if (currentWalletPage > totalPages) currentWalletPage = totalPages;
+
+        // 表示するデータを切り出し
+        const startIndex = (currentWalletPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const pageExpenses = allExpenses.slice(startIndex, endIndex);
+
+        // リスト生成
+        if (pageExpenses.length === 0) {
+            list.innerHTML = "<li style='padding:10px; color:#999; text-align:center;'>まだ記録がありません</li>";
+        } else {
+            pageExpenses.forEach(ex => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.innerHTML = `
+                    <div><span class="date-small">${ex.date}</span> ${ex.item}</div>
+                    <div style="font-weight:bold;">- ${ex.cost}円</div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // ページネーションボタンの状態更新
+        document.getElementById('pageIndicator').innerText = `${currentWalletPage} / ${totalPages}`;
+        document.getElementById('prevPageBtn').disabled = (currentWalletPage === 1);
+        document.getElementById('nextPageBtn').disabled = (currentWalletPage === totalPages);
     }
 
     // --- 8. ページ切り替え & グラフ ---
