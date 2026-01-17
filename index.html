@@ -354,8 +354,8 @@
         
         // 最終ログイン日が今日じゃない場合
         if (userData.lastLoginDate && userData.lastLoginDate !== today) {
-            // 財布残高計算
-            const earned = Math.floor(userData.totalStudy / 60) * 50;
+            // 財布残高計算 (★変更点: 1分1.5円)
+            const earned = Math.floor(userData.totalStudy * 1.5);
             const balance = earned - userData.totalSpent;
 
             // マイナスならペナルティ発動
@@ -388,7 +388,8 @@
         
         document.getElementById('studyInput').value = '';
         saveData();
-        alert(`${mins}分記録しました。\n${Math.floor(mins/60*50)}円相当貯まりました！`);
+        // ★変更点: メッセージも1分1.5円表記へ
+        alert(`${mins}分記録しました。\n${Math.floor(mins * 1.5)}円相当貯まりました！`);
     }
 
     // --- 5. お小遣い帳機能 ---
@@ -567,8 +568,8 @@
         const balanceTime = userData.totalStudy - userData.totalGame;
         document.getElementById('balanceDisplay').innerText = balanceTime;
 
-        // お金計算
-        const totalEarned = Math.floor(userData.totalStudy / 60) * 50;
+        // お金計算 (★変更点: 1分1.5円)
+        const totalEarned = Math.floor(userData.totalStudy * 1.5);
         const currentMoney = totalEarned - userData.totalSpent;
 
         // 表示
