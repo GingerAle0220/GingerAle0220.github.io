@@ -60,10 +60,10 @@
         .unit { font-size: 1rem; margin-left: 5px; }
 
         /* 入力フォーム */
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], select {
             width: 100%;
             padding: 12px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             border: 2px solid var(--text-color);
             border-radius: 8px;
             box-sizing: border-box;
@@ -72,6 +72,17 @@
             outline: none;
             background: #FAFAFA;
             color: var(--text-color);
+        }
+
+        /* セレクトボックス専用スタイル */
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232C3E50%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: .65em auto;
+            cursor: pointer;
         }
 
         button {
@@ -186,7 +197,7 @@
 
     <!-- 1. ログイン -->
     <div id="loginPage" class="page active">
-        <h1>STUDY BANK</h1>
+        <h1>STUDY BANK v3.3</h1>
         <div class="card">
             <p class="label">ユーザー名を入力</p>
             <form onsubmit="login(event)">
@@ -223,6 +234,17 @@
         <!-- 勉強入力 -->
         <div class="card">
             <span class="label">✏️ 勉強を記録</span>
+            
+            <!-- コース選択 -->
+            <div style="margin-bottom:15px; text-align:left;">
+                <label class="label" style="font-size:0.8rem;">コース選択（稼ぎやすさ）</label>
+                <select id="courseSelect" onchange="changeCourse()">
+                    <option value="hard">🔥 厳しめ (0.5円/分)</option>
+                    <option value="normal">🚶 普通 (1.0円/分)</option>
+                    <option value="easy">♨️ ぬるま湯 (1.5円/分)</option>
+                </select>
+            </div>
+
             <input type="number" id="studyInput" placeholder="分" min="1">
             <button class="btn-study" onclick="addStudy()">＋ 時間とお金を貯める</button>
         </div>
@@ -237,7 +259,7 @@
             <span class="label">現在のお財布残高</span>
             <span class="big-number" id="walletBalanceDisplay">0</span><span class="unit">円</span>
             <div style="font-size:0.8rem; color:#666; margin-top:5px;">
-                総収入: <span id="totalEarnedDisplay">0</span>円
+                累計獲得額: <span id="totalEarnedDisplay">0</span>円
             </div>
             <div id="penaltyWarning" style="display:none; color:var(--danger-color); font-size:0.85rem; margin-top:10px; font-weight:bold;">
                 ⚠️ 残高がマイナスです！<br>今日中に勉強して返済しないと<br>明日、ゲーム時間 -60分のペナルティです。
@@ -327,13 +349,22 @@
         expenses: [],       // お小遣い帳履歴
         totalStudy: 0,
         totalGame: 0,
+        totalEarned: 0,     // 累計獲得金額（v3.3新規追加）
         totalSpent: 0,      // 総支出
+        courseMode: 'easy', // 'hard' | 'normal' | 'easy'
         timerEndTime: null, // バックグラウンドタイマー用
         lastLoginDate: null // ペナルティ判定用
     };
     let timerInterval = null;
     let chartInstance = null;
     
+    // コース設定
+    const COURSES = {
+        hard:   { name: "厳しめ",   rate: 0.5 },
+        normal: { name: "普通",     rate: 1.0 },
+        easy:   { name: "ぬるま湯", rate: 1.5 }
+    };
+
     // 帳簿ページネーション用
     let currentWalletPage = 1;
     const ITEMS_PER_PAGE = 5;
@@ -371,12 +402,34 @@
         const stored = localStorage.getItem('studyBank_v3_' + currentUser);
         if (stored) {
             userData = JSON.parse(stored);
-            // データ構造のマイグレーション（古いデータ対策）
+            
+            // --- データ移行 (Migration) ---
             if(!userData.expenses) userData.expenses = [];
             if(!userData.totalSpent) userData.totalSpent = 0;
+            
+            // v3.2以前のユーザーは totalEarned がないので計算して初期化する
+            // (以前はすべて1.5倍計算だったため、そのレートで固定化)
+            if(typeof userData.totalEarned === 'undefined') {
+                userData.totalEarned = Math.floor(userData.totalStudy * 1.5);
+            }
+            // コース設定がない場合はデフォルト(easy)にする
+            if(!userData.courseMode) {
+                userData.courseMode = 'easy';
+            }
+
         } else {
             // 新規ユーザー
-            userData = { logs: [], expenses: [], totalStudy: 0, totalGame: 0, totalSpent: 0, timerEndTime: null, lastLoginDate: new Date().toLocaleDateString('ja-JP') };
+            userData = { 
+                logs: [], 
+                expenses: [], 
+                totalStudy: 0, 
+                totalGame: 0, 
+                totalEarned: 0, // 新規スタートは0円から
+                totalSpent: 0, 
+                courseMode: 'easy',
+                timerEndTime: null, 
+                lastLoginDate: new Date().toLocaleDateString('ja-JP') 
+            };
         }
         updateUI();
     }
@@ -393,9 +446,8 @@
         
         // 最終ログイン日が今日じゃない場合
         if (userData.lastLoginDate && userData.lastLoginDate !== today) {
-            // 財布残高計算 (1分1.5円)
-            const earned = Math.floor(userData.totalStudy * 1.5);
-            const balance = earned - userData.totalSpent;
+            // 財布残高計算 (保存された累計額を使用)
+            const balance = userData.totalEarned - userData.totalSpent;
 
             // マイナスならペナルティ発動
             if (balance < 0) {
@@ -416,7 +468,15 @@
         localStorage.setItem('studyBank_v3_' + currentUser, JSON.stringify(userData));
     }
 
-    // --- 4. 勉強記録 ---
+    // --- 4. 勉強記録 & コース変更 ---
+    
+    // コース変更時に保存する
+    function changeCourse() {
+        const select = document.getElementById('courseSelect');
+        userData.courseMode = select.value;
+        saveData(); // 設定を保存
+    }
+
     function addStudy() {
         const mins = parseInt(document.getElementById('studyInput').value);
         if (!mins || mins <= 0) return;
@@ -425,10 +485,15 @@
         userData.logs.push({ date: today, type: 'study', minutes: mins });
         userData.totalStudy += mins;
         
+        // 現在のコースレートでお金を計算して加算
+        const currentRate = COURSES[userData.courseMode].rate;
+        const earnedMoney = Math.floor(mins * currentRate);
+        userData.totalEarned += earnedMoney;
+
         document.getElementById('studyInput').value = '';
         saveData();
-        // 1分1.5円
-        alert(`${mins}分記録しました。\n${Math.floor(mins * 1.5)}円相当貯まりました！`);
+        
+        alert(`${mins}分記録しました。\n(コース: ${COURSES[userData.courseMode].name})\n${earnedMoney}円 貯金しました！`);
     }
 
     // --- 5. お小遣い帳機能 ---
@@ -448,7 +513,7 @@
             cost: cost
         });
         
-        // ★ 最大件数制限（古いものを削除）
+        // 最大件数制限（古いものを削除）
         if (userData.expenses.length > MAX_EXPENSES) {
             userData.expenses.shift(); // 配列の先頭（一番古い要素）を削除
         }
@@ -465,7 +530,7 @@
         alert(`「${item}」(${cost}円) を記録しました`);
     }
 
-    // ★ 帳簿ページ切り替え
+    // 帳簿ページ切り替え
     function changeWalletPage(direction) {
         currentWalletPage += direction;
         updateUI(); // 表示を更新
@@ -618,13 +683,15 @@
 
     // --- 7. UI更新 ---
     function updateUI() {
+        // コース選択UIの同期
+        document.getElementById('courseSelect').value = userData.courseMode;
+
         // 時間計算
         const balanceTime = userData.totalStudy - userData.totalGame;
         document.getElementById('balanceDisplay').innerText = balanceTime;
 
-        // お金計算 (1分1.5円)
-        const totalEarned = Math.floor(userData.totalStudy * 1.5);
-        const currentMoney = totalEarned - userData.totalSpent;
+        // お金計算 (保存されている累計額を使用)
+        const currentMoney = userData.totalEarned - userData.totalSpent;
 
         // 表示
         const moneyDisplay = document.getElementById('moneyDisplayHome');
@@ -632,7 +699,7 @@
         
         moneyDisplay.innerText = currentMoney.toLocaleString();
         walletDisplay.innerText = currentMoney.toLocaleString();
-        document.getElementById('totalEarnedDisplay').innerText = totalEarned.toLocaleString();
+        document.getElementById('totalEarnedDisplay').innerText = userData.totalEarned.toLocaleString();
 
         // マイナス警告
         const warning = document.getElementById('penaltyWarning');
@@ -650,7 +717,7 @@
         document.getElementById('totalStudyStat').innerText = userData.totalStudy;
         document.getElementById('totalGameStat').innerText = userData.totalGame;
 
-        // ★ 帳簿リスト更新 (ページネーション対応)
+        // 帳簿リスト更新 (ページネーション対応)
         const list = document.getElementById('expenseList');
         list.innerHTML = "";
         
@@ -742,4 +809,4 @@
 </script>
 
 </body>
-</html>
+</html>s
