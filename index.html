@@ -119,7 +119,7 @@
             padding: 0;
             margin: 0;
             text-align: left;
-            min-height: 200px; /* 高さを確保してページ切り替え時のガタツキを軽減 */
+            min-height: 200px;
         }
         .history-item {
             display: flex;
@@ -188,22 +188,189 @@
         /* 赤字表示用 */
         .negative { color: var(--danger-color) !important; }
 
-        #loginPage { margin-top: 25vh; }
+        /* --- v3.4 新機能用スタイル --- */
+        
+        /* ヘルプボタン */
+        .help-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--text-color);
+            color: var(--text-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 200;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* ヘルプモーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 300;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            background: white;
+            width: 85%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            text-align: left;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px; right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+        .help-section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .help-section:last-child { border-bottom: none; }
+        .help-icon { font-size: 1.5rem; margin-right: 5px; }
+
+        /* アップデートログ（ログイン画面用） */
+        .update-log {
+            margin-top: 30px;
+            text-align: left;
+            background: rgba(255,255,255,0.6);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .update-log h3 {
+            font-size: 0.9rem;
+            margin-top: 0;
+            color: var(--text-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 5px;
+            display: inline-block;
+        }
+        .log-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.85rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .log-item {
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .log-ver {
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-right: 5px;
+        }
+
+        #loginPage { margin-top: 15vh; }
     </style>
 </head>
 <body>
+
+<!-- ヘルプボタン (常時表示) -->
+<div class="help-btn" onclick="openHelp()">？</div>
+
+<!-- ヘルプモーダル -->
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeHelp()">×</span>
+        <h2 style="margin-top:0; text-align:center;">使い方ガイド</h2>
+        
+        <div class="help-section">
+            <h3>🏠 ホーム：貯金する</h3>
+            <p>
+                <span class="help-icon">✏️</span><b>勉強時間を入力</b><br>
+                勉強した時間を入力して「時間」と「お金」を貯めましょう。<br>
+                <br>
+                <span class="help-icon">⚙️</span><b>コース選択</b><br>
+                1分あたりのお金の貯まりやすさを選べます。<br>
+                <small>🔥厳しめ(0.5円) / 🚶普通(1円) / ♨️ぬるま湯(1.5円)</small>
+            </p>
+        </div>
+
+        <div class="help-section">
+            <h3>👛 帳簿：お買い物</h3>
+            <p>
+                <span class="help-icon">💸</span><b>使ったお金を記録</b><br>
+                おやつやゲーム課金など、使った金額を記録します。<br>
+                <br>
+                <span class="help-icon">⚠️</span><b>ペナルティ</b><br>
+                使いすぎて収支が<b>マイナス</b>のまま翌日になると、ゲーム可能時間が<b>60分没収</b>されます！
+            </p>
+        </div>
+
+        <div class="help-section">
+            <h3>🎮 ゲーム：遊ぶ</h3>
+            <p>
+                <span class="help-icon">⏱️</span><b>タイマーで遊ぶ</b><br>
+                貯めた「遊べる時間」を使ってゲーム！<br>
+                アプリを閉じてもタイマーは進みます。<br>
+                時間が来たら通知でお知らせします。
+            </p>
+        </div>
+    </div>
+</div>
 
 <div class="container">
 
     <!-- 1. ログイン -->
     <div id="loginPage" class="page active">
-        <h1>STUDY BANK v3.3</h1>
+        <h1>STUDY BANK v3.4</h1>
         <div class="card">
             <p class="label">ユーザー名を入力</p>
             <form onsubmit="login(event)">
                 <input type="text" id="usernameInput" placeholder="名前" maxlength="10" required>
                 <button type="submit" class="btn-study">スタート</button>
             </form>
+        </div>
+
+        <!-- アップデート履歴 -->
+        <div class="update-log">
+            <h3>✨ アップデート履歴</h3>
+            <ul class="log-list">
+                 <li class="log-item">
+                    <span class="log-ver">v3.4</span>
+                    使い方ガイド(？ボタン)を追加しました。ログイン画面に履歴を表示しました。
+                </li>
+                <li class="log-item">
+                    <span class="log-ver">v3.3</span>
+                    お金の貯まりやすさを選べる「コース選択機能」を追加しました。
+                </li>
+                <li class="log-item">
+                    <span class="log-ver">v3.2</span>
+                    帳簿の履歴を最大100件まで保存・ページ切り替えできるようにしました。
+                </li>
+                <li class="log-item">
+                    <span class="log-ver">v3.1</span>
+                    お小遣いの計算レートを1分1.5円に変更しました。
+                </li>
+                 <li class="log-item">
+                    <span class="log-ver">v3.0</span>
+                    帳簿機能(ペナルティ付き)とバックグラウンドタイマーを実装しました。
+                </li>
+            </ul>
         </div>
     </div>
 
@@ -349,7 +516,7 @@
         expenses: [],       // お小遣い帳履歴
         totalStudy: 0,
         totalGame: 0,
-        totalEarned: 0,     // 累計獲得金額（v3.3新規追加）
+        totalEarned: 0,     // 累計獲得金額
         totalSpent: 0,      // 総支出
         courseMode: 'easy', // 'hard' | 'normal' | 'easy'
         timerEndTime: null, // バックグラウンドタイマー用
@@ -369,6 +536,14 @@
     let currentWalletPage = 1;
     const ITEMS_PER_PAGE = 5;
     const MAX_EXPENSES = 100;
+
+    // --- ヘルプ機能 ---
+    function openHelp() {
+        document.getElementById('helpModal').style.display = 'flex';
+    }
+    function closeHelp() {
+        document.getElementById('helpModal').style.display = 'none';
+    }
 
     // --- 1. ログイン & 初期化 ---
     function login(event) {
@@ -406,16 +581,10 @@
             // --- データ移行 (Migration) ---
             if(!userData.expenses) userData.expenses = [];
             if(!userData.totalSpent) userData.totalSpent = 0;
-            
-            // v3.2以前のユーザーは totalEarned がないので計算して初期化する
-            // (以前はすべて1.5倍計算だったため、そのレートで固定化)
             if(typeof userData.totalEarned === 'undefined') {
                 userData.totalEarned = Math.floor(userData.totalStudy * 1.5);
             }
-            // コース設定がない場合はデフォルト(easy)にする
-            if(!userData.courseMode) {
-                userData.courseMode = 'easy';
-            }
+            if(!userData.courseMode) userData.courseMode = 'easy';
 
         } else {
             // 新規ユーザー
@@ -424,7 +593,7 @@
                 expenses: [], 
                 totalStudy: 0, 
                 totalGame: 0, 
-                totalEarned: 0, // 新規スタートは0円から
+                totalEarned: 0, 
                 totalSpent: 0, 
                 courseMode: 'easy',
                 timerEndTime: null, 
@@ -435,7 +604,7 @@
     }
 
     function saveData() {
-        userData.lastLoginDate = new Date().toLocaleDateString('ja-JP'); // 保存時に現在日付更新
+        userData.lastLoginDate = new Date().toLocaleDateString('ja-JP'); 
         localStorage.setItem('studyBank_v3_' + currentUser, JSON.stringify(userData));
         updateUI();
     }
@@ -446,35 +615,30 @@
         
         // 最終ログイン日が今日じゃない場合
         if (userData.lastLoginDate && userData.lastLoginDate !== today) {
-            // 財布残高計算 (保存された累計額を使用)
             const balance = userData.totalEarned - userData.totalSpent;
 
             // マイナスならペナルティ発動
             if (balance < 0) {
                 alert(`【警告】\n昨日の収支がマイナス(${balance}円)でした。\nペナルティとしてゲーム可能時間を60分減らします。`);
                 
-                // ログに残す
                 userData.logs.push({
                     date: today,
                     type: 'penalty',
                     minutes: 60
                 });
-                userData.totalGame += 60; // ゲーム時間を増やして残高を減らす
+                userData.totalGame += 60;
                 saveData();
             }
         }
-        // 今日の日付で更新
         userData.lastLoginDate = today;
         localStorage.setItem('studyBank_v3_' + currentUser, JSON.stringify(userData));
     }
 
     // --- 4. 勉強記録 & コース変更 ---
-    
-    // コース変更時に保存する
     function changeCourse() {
         const select = document.getElementById('courseSelect');
         userData.courseMode = select.value;
-        saveData(); // 設定を保存
+        saveData(); 
     }
 
     function addStudy() {
@@ -485,7 +649,6 @@
         userData.logs.push({ date: today, type: 'study', minutes: mins });
         userData.totalStudy += mins;
         
-        // 現在のコースレートでお金を計算して加算
         const currentRate = COURSES[userData.courseMode].rate;
         const earnedMoney = Math.floor(mins * currentRate);
         userData.totalEarned += earnedMoney;
@@ -503,7 +666,6 @@
         
         if (!item || !cost || cost <= 0) return alert("項目と金額を入力してください");
 
-        // 日時取得
         const now = new Date();
         const dateStr = now.toLocaleDateString('ja-JP') + " " + now.getHours() + ":" + String(now.getMinutes()).padStart(2,'0');
 
@@ -513,27 +675,23 @@
             cost: cost
         });
         
-        // 最大件数制限（古いものを削除）
         if (userData.expenses.length > MAX_EXPENSES) {
-            userData.expenses.shift(); // 配列の先頭（一番古い要素）を削除
+            userData.expenses.shift(); 
         }
 
         userData.totalSpent += cost;
 
         document.getElementById('expenseItem').value = '';
         document.getElementById('expenseCost').value = '';
-        
-        // 記録したら1ページ目に戻す
         currentWalletPage = 1;
         
         saveData();
         alert(`「${item}」(${cost}円) を記録しました`);
     }
 
-    // 帳簿ページ切り替え
     function changeWalletPage(direction) {
         currentWalletPage += direction;
-        updateUI(); // 表示を更新
+        updateUI(); 
     }
 
     // --- 6. ゲーム機能 (バックグラウンド対応タイマー) ---
@@ -544,16 +702,12 @@
         if (!mins || mins <= 0) return alert("時間をセットしてください");
         if (mins > balance) return alert(`時間が足りません！\n現在の残高: ${balance}分`);
 
-        // 終了時刻を計算して保存 (絶対時刻)
         const now = Date.now();
         const endTime = now + (mins * 60 * 1000);
         userData.timerEndTime = endTime;
-        
-        // 記録用の一時データ保存（終了時に確定させるため）
         userData.currentTimerMins = mins; 
         
         saveData();
-        
         setupTimerUI(endTime);
     }
 
@@ -564,7 +718,6 @@
         const endObj = new Date(endTime);
         document.getElementById('endTimeDisplay').innerText = `終了予定: ${endObj.getHours()}:${String(endObj.getMinutes()).padStart(2,'0')}`;
 
-        // インターバル開始
         if(timerInterval) clearInterval(timerInterval);
         
         timerInterval = setInterval(() => {
@@ -572,11 +725,9 @@
             const diff = endTime - now;
 
             if (diff <= 0) {
-                // 時間切れ
                 document.getElementById('timerDisplay').innerText = "00:00";
                 finishTimerAuto();
             } else {
-                // 表示更新
                 const m = Math.floor(diff / 60000);
                 const s = Math.floor((diff % 60000) / 1000);
                 document.getElementById('timerDisplay').innerText = 
@@ -585,21 +736,15 @@
         }, 500);
     }
 
-    // アプリを開き直したときの復帰処理
     function restoreTimer() {
         const now = Date.now();
         if (now < userData.timerEndTime) {
-            // まだ継続中ならUIをタイマーモードへ
             showPage('timerPage', document.querySelectorAll('.nav-item')[2]);
             setupTimerUI(userData.timerEndTime);
         } else {
-            // 閉じてる間に終わってた場合
             userData.timerEndTime = null;
             saveData();
-            // 記録処理はここで行うか、ユーザーに確認するか。
-            // 今回はシンプルに「終了状態」を表示して、次のアクションを促す形にします。
             alert("タイマーが終了していました。ゲーム時間を記録します。");
-            // 時間を確定させる（保存していた分数を使う）
             if(userData.currentTimerMins) {
                 recordGameLog(userData.currentTimerMins);
                 userData.currentTimerMins = null;
@@ -615,7 +760,6 @@
             new Notification("Study Bank", { body: "時間です！ゲームを終了してください。" });
         }
         
-        // 自動で記録して終了
         const mins = userData.currentTimerMins;
         recordGameLog(mins);
         
@@ -628,7 +772,6 @@
     }
 
     function stopTimerManual() {
-        // 途中終了した場合
         const confirmEnd = confirm("タイマーを停止して、予定時間を記録しますか？");
         if(!confirmEnd) return;
 
@@ -649,7 +792,6 @@
         document.getElementById('timerInput').value = '';
     }
 
-    // 手動入力用
     function addGameManual() {
         const mins = parseInt(document.getElementById('manualGameInput').value);
         const balance = userData.totalStudy - userData.totalGame;
@@ -683,17 +825,13 @@
 
     // --- 7. UI更新 ---
     function updateUI() {
-        // コース選択UIの同期
         document.getElementById('courseSelect').value = userData.courseMode;
 
-        // 時間計算
         const balanceTime = userData.totalStudy - userData.totalGame;
         document.getElementById('balanceDisplay').innerText = balanceTime;
 
-        // お金計算 (保存されている累計額を使用)
         const currentMoney = userData.totalEarned - userData.totalSpent;
 
-        // 表示
         const moneyDisplay = document.getElementById('moneyDisplayHome');
         const walletDisplay = document.getElementById('walletBalanceDisplay');
         
@@ -701,7 +839,6 @@
         walletDisplay.innerText = currentMoney.toLocaleString();
         document.getElementById('totalEarnedDisplay').innerText = userData.totalEarned.toLocaleString();
 
-        // マイナス警告
         const warning = document.getElementById('penaltyWarning');
         if(currentMoney < 0) {
             moneyDisplay.classList.add('negative');
@@ -713,30 +850,22 @@
             warning.style.display = 'none';
         }
 
-        // 統計
         document.getElementById('totalStudyStat').innerText = userData.totalStudy;
         document.getElementById('totalGameStat').innerText = userData.totalGame;
 
-        // 帳簿リスト更新 (ページネーション対応)
         const list = document.getElementById('expenseList');
         list.innerHTML = "";
         
-        // 全履歴を逆順（新しい順）にコピー
         const allExpenses = userData.expenses.slice().reverse();
-        
-        // 総ページ数計算
         const totalPages = Math.ceil(allExpenses.length / ITEMS_PER_PAGE) || 1;
         
-        // ページ範囲チェック
         if (currentWalletPage < 1) currentWalletPage = 1;
         if (currentWalletPage > totalPages) currentWalletPage = totalPages;
 
-        // 表示するデータを切り出し
         const startIndex = (currentWalletPage - 1) * ITEMS_PER_PAGE;
         const endIndex = startIndex + ITEMS_PER_PAGE;
         const pageExpenses = allExpenses.slice(startIndex, endIndex);
 
-        // リスト生成
         if (pageExpenses.length === 0) {
             list.innerHTML = "<li style='padding:10px; color:#999; text-align:center;'>まだ記録がありません</li>";
         } else {
@@ -751,7 +880,6 @@
             });
         }
 
-        // ページネーションボタンの状態更新
         document.getElementById('pageIndicator').innerText = `${currentWalletPage} / ${totalPages}`;
         document.getElementById('prevPageBtn').disabled = (currentWalletPage === 1);
         document.getElementById('nextPageBtn').disabled = (currentWalletPage === totalPages);
@@ -809,4 +937,4 @@
 </script>
 
 </body>
-</html>s
+</html>
