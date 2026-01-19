@@ -234,6 +234,9 @@
         <div class="update-log-area">
             <h3 style="margin-top:0; text-align:center; border-bottom:1px solid #ddd; padding-bottom:5px;">📜 アップデート履歴</h3>
             
+            <span class="log-date">2026/01/19 18:30</span>
+            <div><span class="log-ver">v4.2.1</span>チケット再配布ロジックの修正（配布漏れ救済）</div>
+
             <span class="log-date">2026/01/19 18:20</span>
             <div><span class="log-ver">v4.2</span>過去の勉強時間に応じてチケットを遡って配布するよう修正</div>
 
@@ -529,7 +532,8 @@ let userData = {
     tickets: 0,
     ticketsEarnedCount: 0,
     bonusActiveUntil: 0,
-    lastAction: null
+    lastAction: null,
+    initialBonusGiven: false
 };
 let timerInterval = null;
 let chartInstance = null;
@@ -569,27 +573,41 @@ function loadData() {
 
     if (stored) {
         userData = JSON.parse(stored);
-        if(typeof userData.tickets === 'undefined') {
-            // v4.2対応: チケットの遡及配布
+        
+        // v4.2対応: チケット配布漏れの救済
+        // まだ初期特典フラグがない場合
+        if (!userData.initialBonusGiven) {
             const earned = Math.floor(userData.totalStudy / 180);
-            userData.tickets = earned;
-            userData.ticketsEarnedCount = earned;
-            if(earned > 0) {
+            
+            // 配布条件: earned > 0 かつ、チケット枚数が 0 の場合のみ
+            // (既にv4.2初期版を実行してチケットを受け取った人は tickets > 0 になっているはずなので除外)
+            // (v4.0/4.1通過者は tickets=0 なので、ここで救済される)
+            if(earned > 0 && userData.tickets === 0) {
+                 userData.tickets += earned;
+                 userData.ticketsEarnedCount = earned;
                  setTimeout(() => {
                    alert(`【アップデート特典】\nこれまでの累計勉強時間(${userData.totalStudy}分)に応じて\n2倍チケットを ${earned}枚 プレゼントしました！\n🎒リュックを確認してね。`);
                 }, 800);
             }
+            
+            // 次回以降配布しないようにフラグを立てる
+            userData.initialBonusGiven = true;
         }
+        
+        // 変数初期化(安全策)
+        if(typeof userData.tickets === 'undefined') userData.tickets = 0;
         if(typeof userData.ticketsEarnedCount === 'undefined') userData.ticketsEarnedCount = Math.floor(userData.totalStudy / 180);
         if(typeof userData.bonusActiveUntil === 'undefined') userData.bonusActiveUntil = 0;
         if(typeof userData.lastAction === 'undefined') userData.lastAction = null;
+        
     } else {
         userData = { 
             logs: [], expenses: [], 
             totalStudy: 0, totalGame: 0, totalEarned: 0, totalSpent: 0, 
             courseMode: 'easy', timerEndTime: null, 
             lastLoginDate: new Date().toLocaleDateString('ja-JP'),
-            tickets: 0, ticketsEarnedCount: 0, bonusActiveUntil: 0, lastAction: null
+            tickets: 0, ticketsEarnedCount: 0, bonusActiveUntil: 0, lastAction: null,
+            initialBonusGiven: true // 新規ユーザーは最初からフラグON (進捗0なので配布不要)
         };
     }
     saveData();
