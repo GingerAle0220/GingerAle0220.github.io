@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Study Bank v4.2</title>
+    <title>Study Bank v4.3</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* --- デザイン定義 --- */
@@ -105,6 +105,7 @@
         }
         .help-btn { top: 15px; }
         .bag-btn { top: 65px; background: var(--bonus-color); color: white; border-color: #d35400; }
+        .save-btn { top: 115px; background: #34495e; color: white; border-color: #2c3e50; font-size: 1rem; }
 
         /* ボーナス表示 */
         .bonus-badge {
@@ -159,6 +160,7 @@
 <!-- アイコンボタン -->
 <div class="icon-btn help-btn" onclick="openModal('helpModal')">？</div>
 <div class="icon-btn bag-btn" onclick="openBag()">🎒</div>
+<div class="icon-btn save-btn" onclick="openBackup()">💾</div>
 
 <!-- ヘルプモーダル -->
 <div id="helpModal" class="modal">
@@ -170,6 +172,20 @@
         <p><b>👛 帳簿</b><br>使ったお金を記録します。収支がマイナスになるとペナルティがあるので注意！</p>
         <p><b>🎮 ゲーム</b><br>貯めた時間で遊べます。「記録のみ」から手動入力も可能です。</p>
         <p><b>📊 記録</b><br>過去のグラフを見ることができます。矢印ボタンで週を移動できます。</p>
+        <hr>
+        <p><b>💾 データバックアップ</b><br>
+        機種変更やブラウザのデータ削除に備えて、データを保存できます。<br>
+        <br>
+        <b>【保存方法】</b><br>
+        1. 左上の「💾」ボタンを押す。<br>
+        2. 「コピーする」ボタンを押して、文字をコピー。<br>
+        3. メモ帳アプリなどに貼り付けて保存。<br>
+        <br>
+        <b>【復元方法】</b><br>
+        1. ログイン画面下の「バックアップ・復元」または「💾」ボタンを押す。<br>
+        2. 下の欄に保存した文字を貼り付ける。<br>
+        3. 「復元する」ボタンを押す。
+        </p>
     </div>
 </div>
 
@@ -206,10 +222,16 @@
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('backupModal')">×</span>
         <h2>💾 データ管理</h2>
-        <textarea id="backupText" rows="6" readonly onclick="this.select()"></textarea>
+        <p style="font-size:0.85rem; color:#666;">
+            現在のデータをバックアップ（保存）する場合は、上の文字をすべてコピーして保存してください。<br>
+            復元する場合は、下の欄に貼り付けてください。
+        </p>
+        <label class="label">現在のデータ（コピー用）</label>
+        <textarea id="backupText" rows="5" readonly onclick="this.select()"></textarea>
         <button class="btn-study" onclick="copyBackup()">コピーする</button>
         <hr>
-        <textarea id="restoreText" rows="4" placeholder="ここに貼り付け"></textarea>
+        <label class="label">復元用データ入力</label>
+        <textarea id="restoreText" rows="4" placeholder="ここにバックアップデータを貼り付け"></textarea>
         <button class="btn-stop" onclick="restoreData()">復元する</button>
     </div>
 </div>
@@ -218,7 +240,7 @@
 
     <!-- 1. ログイン -->
     <div id="loginPage" class="page active">
-        <h1>STUDY BANK v4.2</h1>
+        <h1>STUDY BANK v4.3</h1>
         <div class="card">
             <p class="label">ユーザー名を入力</p>
             <form onsubmit="login(event)">
@@ -234,6 +256,9 @@
         <div class="update-log-area">
             <h3 style="margin-top:0; text-align:center; border-bottom:1px solid #ddd; padding-bottom:5px;">📜 アップデート履歴</h3>
             
+            <span class="log-date">2026/01/19 22:30</span>
+            <div><span class="log-ver">v4.3</span>バックアップ機能ボタンの追加、ヘルプ詳細化</div>
+
             <span class="log-date">2026/01/19 18:30</span>
             <div><span class="log-ver">v4.2.1</span>チケット再配布ロジックの修正（配布漏れ救済）</div>
 
@@ -575,13 +600,8 @@ function loadData() {
         userData = JSON.parse(stored);
         
         // v4.2対応: チケット配布漏れの救済
-        // まだ初期特典フラグがない場合
         if (!userData.initialBonusGiven) {
             const earned = Math.floor(userData.totalStudy / 180);
-            
-            // 配布条件: earned > 0 かつ、チケット枚数が 0 の場合のみ
-            // (既にv4.2初期版を実行してチケットを受け取った人は tickets > 0 になっているはずなので除外)
-            // (v4.0/4.1通過者は tickets=0 なので、ここで救済される)
             if(earned > 0 && userData.tickets === 0) {
                  userData.tickets += earned;
                  userData.ticketsEarnedCount = earned;
@@ -589,8 +609,6 @@ function loadData() {
                    alert(`【アップデート特典】\nこれまでの累計勉強時間(${userData.totalStudy}分)に応じて\n2倍チケットを ${earned}枚 プレゼントしました！\n🎒リュックを確認してね。`);
                 }, 800);
             }
-            
-            // 次回以降配布しないようにフラグを立てる
             userData.initialBonusGiven = true;
         }
         
@@ -607,7 +625,7 @@ function loadData() {
             courseMode: 'easy', timerEndTime: null, 
             lastLoginDate: new Date().toLocaleDateString('ja-JP'),
             tickets: 0, ticketsEarnedCount: 0, bonusActiveUntil: 0, lastAction: null,
-            initialBonusGiven: true // 新規ユーザーは最初からフラグON (進捗0なので配布不要)
+            initialBonusGiven: true 
         };
     }
     saveData();
@@ -616,7 +634,14 @@ function loadData() {
 function saveData() {
     userData.lastLoginDate = new Date().toLocaleDateString('ja-JP');
     localStorage.setItem('studyBank_v4_' + currentUser, JSON.stringify(userData));
-    // updateUIはここでは呼ばない(頻度が高いため)。必要な箇所で呼ぶ。
+}
+
+// --- バックアップ機能 (追加) ---
+function openBackup() {
+    // 現在のデータをテキストエリアに反映して開く
+    const text = JSON.stringify(userData);
+    document.getElementById('backupText').value = text;
+    openModal('backupModal');
 }
 
 // --- 2. 勉強記録 & チケット & Tips ---
@@ -963,15 +988,19 @@ function renderChart() {
 
 // データバックアップ機能
 function copyBackup() {
-    const text = JSON.stringify(userData);
-    document.getElementById('backupText').value = text;
+    const text = document.getElementById('backupText').value; // userDataはopenBackupでセット済み
+    if(!text) { alert("データがありません"); return; }
+    
     document.getElementById('backupText').select();
     document.execCommand('copy');
     alert("コピーしました。");
 }
 function restoreData() {
     try {
-        const data = JSON.parse(document.getElementById('restoreText').value);
+        const input = document.getElementById('restoreText').value;
+        if(!input) return;
+        
+        const data = JSON.parse(input);
         if(data.totalStudy !== undefined) {
             userData = data;
             saveData();
